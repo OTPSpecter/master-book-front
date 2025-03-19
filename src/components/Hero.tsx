@@ -50,7 +50,7 @@ const Hero: React.FC<HeroProps> = ({ title, description, author, id, coverUrl })
       {/* Content */}
       <div className="relative h-full container mx-auto px-4 flex flex-col justify-center">
         <div className="max-w-2xl space-y-4">
-          <h2 className="text-5xl font-bold">{title}</h2>
+          <h2 className="text-5xl font-bold">{safeDecode(title)}</h2>
           <p className="text-lg text-gray-300">{author}</p>
           <p className="text-gray-300 max-w-md">
             {description.split(' ').slice(0, 20).join(' ')}...

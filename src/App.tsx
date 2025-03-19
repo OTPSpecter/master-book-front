@@ -12,6 +12,7 @@ import Search from "./pages/Search.js";
 
 export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string>("5");
 
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [readList, setReadList] = useState<string[]>([]);
@@ -22,38 +23,67 @@ export function App() {
   const [loadingFirst, setLoadingFirst] = useState(true);
   const [loadingOthers, setLoadingOthers] = useState(true);
 
+  // 🔄 Vérifier l'authentification au chargement de l'application
   useEffect(() => {
-    const fetchFirstCarousel = async () => {
-      const userId = "1";
-      const books = await get_books_recom_acm(userId);
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetch("http://127.0.0.1:8000/usr/me", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUserId(data.id_user);
+            setIsLoggedIn(true);
+          } else {
+            console.warn("🔴 Token invalide, déconnexion...");
+            localStorage.removeItem("token");
+            setUserId("5"); // Remettre userId = 5
+            setIsLoggedIn(false);
+          }
+        } catch (error) {
+          console.error("❌ Erreur lors de la récupération de l'utilisateur :", error);
+        }
+      }
+    };
 
+    checkAuth();
+  }, []); // Exécuter une seule fois au chargement de la page
+
+  // ⚡ Fetch des livres basés sur `userId`
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoadingFirst(true);
+      setLoadingOthers(true);
+      
+      const books = await get_books_recom_acm(userId);
       if (books) {
         setRecommendedBooks(books);
         setLoadingFirst(false);
       }
+
+      const booksACP = await get_books_recom_acp(userId);
+      const booksSIM = await get_books_recom_sim(userId);
+
+      if (booksACP) setRecommendedBooksACP(booksACP);
+      if (booksSIM) setRecommendedBooksSIM(booksSIM);
+      setLoadingOthers(false);
     };
 
-    fetchFirstCarousel();
-  }, []);
+    fetchBooks();
+  }, [userId]); // 🔄 Recharger les livres quand `userId` change
 
-  useEffect(() => {
-    if (!loadingFirst) {
-      const fetchOtherCarousels = async () => {
-        const userId = "5";
-        const booksACP = await get_books_recom_acp(userId);
-        const booksSIM = await get_books_recom_sim(userId);
+  const handleLoginSuccess = (newUserId: string) => {
+    setUserId(newUserId);
+    setIsLoggedIn(true);
+  };
 
-        if (booksACP) setRecommendedBooksACP(booksACP);
-        if (booksSIM) setRecommendedBooksSIM(booksSIM);
-        setLoadingOthers(false);
-      };
-
-      fetchOtherCarousels();
-    }
-  }, [loadingFirst]); // Exécute ce useEffect uniquement quand `loadingFirst` devient `false`
-
-  const toggleLogin = () => {
-    setIsLoggedIn(!isLoggedIn);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUserId("5");
+    setIsLoggedIn(false);
   };
 
   const toggleWishlist = (bookId: string) => {
@@ -103,7 +133,11 @@ export function App() {
     <div className="bg-black text-white min-h-screen w-full">
       <Navbar
         isLoggedIn={isLoggedIn}
-        onLoginToggle={toggleLogin}
+        userId={userId}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
+        isInWishlist={wishlist}
+        isRead={readList}
         onToggleWishlist={toggleWishlist}
         onToggleReadList={toggleReadList}
       />

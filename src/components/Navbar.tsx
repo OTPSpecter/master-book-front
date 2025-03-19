@@ -1,53 +1,45 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { SearchIcon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { SearchIcon, UserIcon, ChevronDownIcon } from "lucide-react";
+import LoginModal from "./LoginModal";
 import BookModal from "./BookModal";
 import AuthorModal from "./AuthorModal";
 
 interface NavbarProps {
   isLoggedIn: boolean;
-  onLoginToggle: () => void;
-  onToggleWishlist: (id: string) => void;
-  onToggleReadList: (id: string) => void;
+  userId: string;
+  onLoginSuccess: (userId: string) => void;
+  onLogout: () => void;
+  isInWishlist: any,
+  isRead: any,
+  onToggleWishlist: any,
+  onToggleReadList: any,
 }
 
-const Navbar: React.FC<NavbarProps> = ({
-  isLoggedIn,
-  onLoginToggle,
-  onToggleWishlist,
-  onToggleReadList,
-}) => {
+const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onLogout }) => {
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState("title");
+  const [searchType, setSearchType] = useState<"title" | "author">("title");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
-  const [selectedAuthor, setSelectedAuthor] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [selectedAuthor, setSelectedAuthor] = useState<{ id: string; name: string } | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  const navigate = useNavigate();
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  // Fetch des suggestions en temps réel
+  // Fetch suggestions en temps réel
   useEffect(() => {
     if (query.length > 1) {
       fetch(
         `http://127.0.0.1:8000/api/search_deux/suggestions?query=${encodeURIComponent(query)}&type=${searchType}`
       )
-        .then((res) => {
-          console.log("🔍 Réponse brute de l'API :", res);
-          return res.json();  // ❗ C'est ici que ça plante si la réponse n'est pas un JSON
-        })
-        .then((data) => {
-          console.log("📌 Données reçues :", data);
-          setSuggestions(data.results);
-        })
-        .catch((err) => console.error("❌ Erreur lors de la récupération des livres :", err));
+        .then((res) => res.json())
+        .then((data) => setSuggestions(data.results))
+        .catch((err) => console.error("❌ Erreur suggestions :", err));
     } else {
       setSuggestions([]);
     }
   }, [query, searchType]);
-  
 
   return (
     <header className="bg-black sticky top-0 z-50">
@@ -57,28 +49,22 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center">
             <h1 className="text-red-600 text-2xl font-bold mr-8">BOOKFLIX</h1>
             <nav className="hidden md:flex space-x-6">
-              <Link to="/" className="text-white hover:text-gray-300">
-                Home
-              </Link>
-              <Link to="/contact" className="text-white hover:text-gray-300">
-                Contact
-              </Link>
+              <Link to="/" className="text-white hover:text-gray-300">Home</Link>
+              <Link to="/contact" className="text-white hover:text-gray-300">Contact</Link>
             </nav>
           </div>
 
           <div className="relative flex items-center space-x-3">
             {/* 🌟 Switch entre Titre et Auteur */}
             <button
-              onClick={() =>
-                setSearchType(searchType === "title" ? "author" : "title")
-              }
-              className={`relative w-25 h-8 flex items-center rounded-full border border-gray-600 p-1 transition ${
+              onClick={() => setSearchType(searchType === "title" ? "author" : "title")}
+              className={`relative w-24 h-8 flex items-center rounded-full border border-gray-600 p-1 transition ${
                 searchType === "title" ? "bg-blue-600" : "bg-red-600"
               }`}
             >
               <span
                 className={`absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                  searchType === "title" ? "translate-x-0" : "translate-x-17"
+                  searchType === "title" ? "translate-x-0" : "translate-x-16"
                 }`}
               />
               <span
@@ -97,7 +83,7 @@ const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
 
-            {/* 🔍 Barre de recherche + Suggestions */}
+            {/* 🔍 Barre de recherche */}
             <div className="relative">
               <div className="relative w-48 md:w-64">
                 <input
@@ -132,29 +118,65 @@ const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Modals */}
-            {selectedBookId && (
-              <BookModal
-                id={selectedBookId}
-                isOpen={true}
-                onClose={() => setSelectedBookId(null)}
-                isInWishlist={false}
-                isRead={false}
-                onToggleWishlist={onToggleWishlist}
-                onToggleReadList={onToggleReadList}
-              />
-            )}
-            {selectedAuthor && (
-              <AuthorModal
-                authorId={selectedAuthor.id}
-                authorName={selectedAuthor.name}
-                isOpen={true}
-                onClose={() => setSelectedAuthor(null)}
-              />
+            {/* 🔑 Connexion / Déconnexion */}
+            {isLoggedIn ? (
+              <div className="relative">
+                <button className="flex items-center text-white" onClick={toggleMenu}>
+                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center mr-2">
+                    <UserIcon size={18} />
+                  </div>
+                  <ChevronDownIcon size={16} />
+                </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-black border border-gray-700 rounded shadow-lg py-1">
+                    <Link to="/wishlist" className="block px-4 py-2 text-white hover:bg-gray-800">
+                      Wishlist
+                    </Link>
+                    <Link to="/read" className="block px-4 py-2 text-white hover:bg-gray-800">
+                      Déjà lu
+                    </Link>
+                    <button
+                      className="block px-4 py-2 text-white hover:bg-gray-800 w-full text-left"
+                      onClick={onLogout}
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700" onClick={() => setIsLoginModalOpen(true)}>
+                Me connecter
+              </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Affichage du Modal de Connexion */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLoginSuccess={onLoginSuccess} />
+
+      {/* Modals pour Livres et Auteurs */}
+      {selectedBookId && (
+        <BookModal
+          id={selectedBookId}
+          isOpen={true}
+          onClose={() => setSelectedBookId(null)}
+          isInWishlist={false}
+          isRead={false}
+          onToggleWishlist={() => {}}
+          onToggleReadList={() => {}
+          }
+        />
+      )}
+      {selectedAuthor && (
+        <AuthorModal
+          authorId={selectedAuthor.id}
+          authorName={selectedAuthor.name}
+          isOpen={true}
+          onClose={() => setSelectedAuthor(null)}
+        />
+      )}
     </header>
   );
 };

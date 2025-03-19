@@ -12,7 +12,7 @@ interface AuthorModalProps {
 
 const AuthorModal: React.FC<AuthorModalProps> = ({ authorId, authorName, isOpen, onClose }) => {
   const [books, setBooks] = useState<any[]>([]);
-  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  // const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {

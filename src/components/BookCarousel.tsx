@@ -33,7 +33,7 @@ const BookCarousel: React.FC<BookCarouselProps> = ({
     }
   };
   
-  return (
+  return books && books.length > 0 ? (
     <div className="my-8">
       <h2 className="text-xl font-medium mb-4">{title}</h2>
       <div className="relative group">
@@ -55,10 +55,10 @@ const BookCarousel: React.FC<BookCarouselProps> = ({
         >
           {books.map((book: any) => {
             let [title, rating, category, isbn, coverUrl, id, author, description] = book; // Extraction des données
-
+  
             // Vérification si l'auteur est null ou undefined
             const authorName = author ?? "Pas d'auteur"; // Si author est null ou undefined, utiliser "Pas d'auteur"
-
+  
             {title = decodeURIComponent(escape(title));}
             return (
               <BookCard
@@ -85,6 +85,6 @@ const BookCarousel: React.FC<BookCarouselProps> = ({
         </button>
       </div>
     </div>
-  );
+  ) : null;  
 };
 export default BookCarousel;
