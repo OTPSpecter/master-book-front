@@ -24,7 +24,6 @@ const BookCard: React.FC<BookCardProps> = ({
   onToggleWishlist,
   onToggleReadList,
 }) => {
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <>
@@ -48,13 +47,17 @@ const BookCard: React.FC<BookCardProps> = ({
           >
             <button
               onClick={() => onToggleWishlist(id)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${isInWishlist ? "bg-red-600" : "bg-gray-700"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isInWishlist ? "bg-red-600" : "bg-gray-700"
+              }`}
             >
               {isInWishlist ? <XIcon size={16} /> : <PlusIcon size={16} />}
             </button>
             <button
               onClick={() => onToggleReadList(id)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${isRead ? "bg-red-600" : "bg-gray-700"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isRead ? "bg-red-600" : "bg-gray-700"
+              }`}
             >
               <CheckIcon size={16} />
             </button>

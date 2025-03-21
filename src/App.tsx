@@ -44,7 +44,10 @@ export function App() {
             setIsLoggedIn(false);
           }
         } catch (error) {
-          console.error("❌ Erreur lors de la récupération de l'utilisateur :", error);
+          console.error(
+            "❌ Erreur lors de la récupération de l'utilisateur :",
+            error
+          );
         }
       }
     };
@@ -57,7 +60,7 @@ export function App() {
     const fetchBooks = async () => {
       setLoadingFirst(true);
       setLoadingOthers(true);
-      
+
       const books = await get_books_recom_acm(userId);
       if (books) {
         setRecommendedBooks(books);
@@ -86,19 +89,112 @@ export function App() {
     setIsLoggedIn(false);
   };
 
-  const toggleWishlist = (bookId: string) => {
-    if (wishlist.includes(bookId)) {
-      setWishlist(wishlist.filter((id) => id !== bookId));
-    } else {
-      setWishlist([...wishlist, bookId]);
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (isLoggedIn) {
+        // Vérifie si l'utilisateur est connecté
+        const response = await fetch(
+          `http://127.0.0.1:8000/wishlist/${userId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setWishlist(data.wishlist.map((book: any) => book.id_livre));
+        }
+      }
+    };
+
+    const fetchReadList = async () => {
+      if (isLoggedIn) {
+        // Vérifie si l'utilisateur est connecté
+        const response = await fetch(`http://127.0.0.1:8000/a_lu/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setReadList(data.readList.map((book: any) => book.id_livre));
+        }
+      }
+    };
+
+    if (isLoggedIn) {
+      // Exécuter seulement si l'utilisateur est connecté
+      fetchWishlist();
+      fetchReadList();
+    }
+  }, [userId, isLoggedIn]); // Le useEffect dépend aussi de l'état de connexion
+
+  const toggleWishlist = async (bookId: string) => {
+    if (!isLoggedIn) return; // Ne faire aucune action si l'utilisateur n'est pas connecté
+
+    try {
+      if (wishlist.includes(bookId)) {
+        // Supprimer du wishlist en BDD
+        await fetch("http://127.0.0.1:8000/wishlist/remove", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_user: userId,
+            id_livre: bookId,
+          }),
+        });
+        setWishlist(wishlist.filter((id) => id !== bookId));
+      } else {
+        // Ajouter au wishlist en BDD
+        await fetch("http://127.0.0.1:8000/wishlist/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_user: userId,
+            id_livre: bookId,
+          }),
+        });
+        setWishlist([...wishlist, bookId]);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification de la wishlist", error);
     }
   };
 
-  const toggleReadList = (bookId: string) => {
-    if (readList.includes(bookId)) {
-      setReadList(readList.filter((id) => id !== bookId));
-    } else {
-      setReadList([...readList, bookId]);
+  const toggleReadList = async (bookId: string) => {
+    if (!isLoggedIn) return; // Ne faire aucune action si l'utilisateur n'est pas connecté
+
+    try {
+      if (readList.includes(bookId)) {
+        // Supprimer du ReadList en BDD
+        await fetch("http://127.0.0.1:8000/a_lu/remove", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: userId, // Assurez-vous que les noms de clés sont corrects
+            book_id: bookId, // Id du livre à supprimer
+            genre_id: 1, // Genre que vous pouvez adapter
+          }),
+        });
+        setReadList(readList.filter((id) => id !== bookId));
+      } else {
+        // Ajouter au ReadList en BDD
+        await fetch("http://127.0.0.1:8000/a_lu/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            book_id: bookId,
+            genre_id: 1, // Vous pouvez adapter le genre ou l'envoyer dynamiquement
+          }),
+        });
+        setReadList([...readList, bookId]);
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors de la modification de la liste de lecture",
+        error
+      );
     }
   };
 
@@ -136,8 +232,8 @@ export function App() {
         userId={userId}
         onLoginSuccess={handleLoginSuccess}
         onLogout={handleLogout}
-        isInWishlist={wishlist}
-        isRead={readList}
+        wishlist={wishlist} // Passer la wishlist à Navbar
+        readList={readList} // Passer la readList à Navbar
         onToggleWishlist={toggleWishlist}
         onToggleReadList={toggleReadList}
       />

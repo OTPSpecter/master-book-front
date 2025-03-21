@@ -10,18 +10,30 @@ interface NavbarProps {
   userId: string;
   onLoginSuccess: (userId: string) => void;
   onLogout: () => void;
-  isInWishlist: any,
-  isRead: any,
-  onToggleWishlist: any,
-  onToggleReadList: any,
+  wishlist: string[];
+  readList: string[];
+  onToggleWishlist: any;
+  onToggleReadList: any;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  isLoggedIn,
+  userId,
+  onLoginSuccess,
+  onLogout,
+  wishlist,
+  readList,
+  onToggleWishlist,
+  onToggleReadList,
+}) => {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"title" | "author">("title");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
-  const [selectedAuthor, setSelectedAuthor] = useState<{ id: string; name: string } | null>(null);
+  const [selectedAuthor, setSelectedAuthor] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -31,7 +43,9 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
   useEffect(() => {
     if (query.length > 1) {
       fetch(
-        `http://127.0.0.1:8000/api/search_deux/suggestions?query=${encodeURIComponent(query)}&type=${searchType}`
+        `http://127.0.0.1:8000/api/search_deux/suggestions?query=${encodeURIComponent(
+          query
+        )}&type=${searchType}`
       )
         .then((res) => res.json())
         .then((data) => setSuggestions(data.results))
@@ -49,15 +63,21 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
           <div className="flex items-center">
             <h1 className="text-red-600 text-2xl font-bold mr-8">BOOKFLIX</h1>
             <nav className="hidden md:flex space-x-6">
-              <Link to="/" className="text-white hover:text-gray-300">Home</Link>
-              <Link to="/contact" className="text-white hover:text-gray-300">Contact</Link>
+              <Link to="/" className="text-white hover:text-gray-300">
+                Home
+              </Link>
+              <Link to="/contact" className="text-white hover:text-gray-300">
+                Contact
+              </Link>
             </nav>
           </div>
 
           <div className="relative flex items-center space-x-3">
             {/* 🌟 Switch entre Titre et Auteur */}
             <button
-              onClick={() => setSearchType(searchType === "title" ? "author" : "title")}
+              onClick={() =>
+                setSearchType(searchType === "title" ? "author" : "title")
+              }
               className={`relative w-24 h-8 flex items-center rounded-full border border-gray-600 p-1 transition ${
                 searchType === "title" ? "bg-blue-600" : "bg-red-600"
               }`}
@@ -121,7 +141,10 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
             {/* 🔑 Connexion / Déconnexion */}
             {isLoggedIn ? (
               <div className="relative">
-                <button className="flex items-center text-white" onClick={toggleMenu}>
+                <button
+                  className="flex items-center text-white"
+                  onClick={toggleMenu}
+                >
                   <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center mr-2">
                     <UserIcon size={18} />
                   </div>
@@ -129,10 +152,16 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
                 </button>
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-black border border-gray-700 rounded shadow-lg py-1">
-                    <Link to="/wishlist" className="block px-4 py-2 text-white hover:bg-gray-800">
+                    <Link
+                      to="/wishlist"
+                      className="block px-4 py-2 text-white hover:bg-gray-800"
+                    >
                       Wishlist
                     </Link>
-                    <Link to="/read" className="block px-4 py-2 text-white hover:bg-gray-800">
+                    <Link
+                      to="/read"
+                      className="block px-4 py-2 text-white hover:bg-gray-800"
+                    >
                       Déjà lu
                     </Link>
                     <button
@@ -145,7 +174,10 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
                 )}
               </div>
             ) : (
-              <button className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700" onClick={() => setIsLoginModalOpen(true)}>
+              <button
+                className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
+                onClick={() => setIsLoginModalOpen(true)}
+              >
                 Me connecter
               </button>
             )}
@@ -154,7 +186,11 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
       </div>
 
       {/* Affichage du Modal de Connexion */}
-      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLoginSuccess={onLoginSuccess} />
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={onLoginSuccess}
+      />
 
       {/* Modals pour Livres et Auteurs */}
       {selectedBookId && (
@@ -162,11 +198,10 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, userId, onLoginSuccess, onL
           id={selectedBookId}
           isOpen={true}
           onClose={() => setSelectedBookId(null)}
-          isInWishlist={false}
-          isRead={false}
-          onToggleWishlist={() => {}}
-          onToggleReadList={() => {}
-          }
+          isInWishlist={wishlist.includes(selectedBookId)} // Utiliser l'état de wishlist
+          isRead={readList.includes(selectedBookId)} // Utiliser l'état de readList
+          onToggleWishlist={onToggleWishlist}
+          onToggleReadList={onToggleReadList}
         />
       )}
       {selectedAuthor && (
