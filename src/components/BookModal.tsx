@@ -5,6 +5,7 @@ import {
   get_Books_all_Details,
   get_Books_all_genres,
   get_all_books_in_saga,
+  get_all_similar_books
 } from "../data/bdd_getters.js";
 
 interface BookModalProps {
@@ -52,6 +53,7 @@ const BookModal: React.FC<BookModalProps> = ({
   const [isbn, setIsbn] = useState<string>("");
   const [saga, setSaga] = useState<string | null>(null);
   const [sagaBooks, setSagaBooks] = useState<string[] | null>(null);
+  const [similarBooks, setSimilarBooks] = useState<string[] | null>(null);
   const [opus, setOpus] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -135,6 +137,48 @@ const BookModal: React.FC<BookModalProps> = ({
         console.error("Erreur lors de la récupération des détails :", err)
       );
 
+      get_all_similar_books(bookId)
+      .then(async (data) => {
+        if (data && data.length > 0) {
+          // Récupérer les détails pour chaque livre similaire
+          const booksWithCovers = await Promise.all(
+            data.map(async (similarBook) => {
+              const similarBookId = similarBook._source?.id; // Récupère l'ID du livre
+              if (!similarBookId) return null;
+  
+              try {
+                const response = await fetch(
+                  `http://127.0.0.1:8000/books_list/${similarBookId}`
+                );
+                if (!response.ok) {
+                  throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                const bookDetails = await response.json();
+                return {
+                  id: similarBookId,
+                  title: bookDetails[0][0], // Titre du livre
+                  coverUrl: bookDetails[0][4], // URL de la couverture
+                };
+              } catch (error) {
+                console.error(
+                  `Erreur lors de la récupération des détails pour le livre ${similarBookId}:`,
+                  error
+                );
+                return null;
+              }
+            })
+          );
+  
+          // Filtrer les livres valides et mettre à jour l'état
+          setSimilarBooks(booksWithCovers.filter((book) => book !== null));
+        }
+      })
+      .catch((err) =>
+        console.error("Erreur lors de la récupération des livres similaires :", err)
+      );
+
+    
+
     get_Books_all_genres(id)
       .then((data) => {
         if (data.length > 0) {
@@ -163,10 +207,11 @@ const BookModal: React.FC<BookModalProps> = ({
 
   return createPortal(
     <div
+    onClick={onClose}
       key={bookId}
       className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
     >
-      <div className="bg-zinc-900 max-w-7xl w-full rounded-lg relative max-h-[90vh] overflow-y-auto">
+      <div onClick={(e)=>e.stopPropagation()} className="bg-zinc-900 max-w-7xl w-full rounded-lg relative max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -335,22 +380,45 @@ const BookModal: React.FC<BookModalProps> = ({
         </div>
         {sagaBooks && (
           <div className="p-6 border-t border-gray-800">
-            <h3 className="text-xl font-semibold mb-4">Livres similaires</h3>
+            <h3 className="text-xl font-semibold mb-4">Saga</h3>
             <div className="flex flex-wrap gap-2 justify-center">
-              {sagaBooks.map((similarBook) => (
+              {sagaBooks.map((sagaBooks) => (
                 <img
-                  key={similarBook[8]}
-                  src={similarBook[4]}
-                  alt={similarBook[0]}
+                  key={sagaBooks[8]}
+                  src={sagaBooks[4]}
+                  alt={sagaBooks[0]}
                   className="w-40 h-auto rounded-md shadow-md hover:opacity-75 cursor-pointer transition-transform transform hover:scale-105"
                   onClick={() => {
-                    setBookId(similarBook[8]); // 🔄 Met à jour le livre affiché
+                    setBookId(sagaBooks[8]); // 🔄 Met à jour le livre affiché
                   }}
                 />
               ))}
             </div>
           </div>
         )}
+        {
+  similarBooks && similarBooks.length > 0 && (
+    <div className="p-6 border-t border-gray-800">
+      <h3 className="text-xl font-semibold mb-4">Livres similaires</h3>
+      <div className="flex flex-wrap gap-2 justify-center">
+        {similarBooks.map((book, index) => (
+          // on affiche les livres 
+          // Comment on enleves des livres similaire le livre actuel
+          book.id !== bookId && (
+            <img
+              src={book.coverUrl} // URL de la couverture
+              alt={book.title}
+              className="w-40 h-auto rounded-md shadow-md hover:opacity-75 cursor-pointer transition-transform transform hover:scale-105"
+              onClick={() => {
+                setBookId(book.id); // Met à jour le livre affiché
+              }}
+            />
+            )
+        ))}
+      </div>
+    </div>
+  )
+}
       </div>
     </div>,
     document.body
