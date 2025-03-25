@@ -87,3 +87,25 @@ export async function get_all_books_in_saga(sagaName) {
         return null; // Retourne null en cas d'erreur
     }
 }
+/**
+ * Fonction Getter qui permet de récupérer les livres similaires à un livre donné
+ * pour le modal d'un livre
+ * 
+ * @param {string} book_id 
+ * @returns 
+ */
+export async function get_all_similar_books(book_id) {
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/livres/similaire/${book_id}`);
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        const books_detail = await response.json(); // Récupère la réponse en JSON
+        console.log("Données reçues pour les livres similaires :", books_detail); // Affiche les données
+
+        return books_detail; // Retourne la liste des recommandations
+    } catch (error) {
+        console.error("Erreur lors de la requête ", error);
+        return null; // Retourne null en cas d'erreur
+    }
+}
