@@ -8,6 +8,7 @@ import AuthorModal from "./AuthorModal";
 interface NavbarProps {
   isLoggedIn: boolean;
   userId: string;
+  userRole: string;
   onLoginSuccess: (userId: string) => void;
   onLogout: () => void;
   wishlist: string[];
@@ -19,6 +20,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({
   isLoggedIn,
   userId,
+  userRole,
   onLoginSuccess,
   onLogout,
   wishlist,
@@ -55,6 +57,8 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   }, [query, searchType]);
 
+  console.log("User Role in Navbar:", userRole);
+
   return (
     <header className="bg-black sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -69,6 +73,12 @@ const Navbar: React.FC<NavbarProps> = ({
               <Link to="/contact" className="text-white hover:text-gray-300">
                 Contact
               </Link>
+              {/* Afficher "Dashboard" uniquement si le rôle est "manager" */}
+              {userRole === "manager" && (
+                <Link to="/dashboard" className="text-white hover:text-gray-300">
+                  Dashboard
+                </Link>
+              )}
             </nav>
           </div>
 

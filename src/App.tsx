@@ -12,7 +12,9 @@ import Search from "./pages/Search.js";
 
 export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userId, setUserId] = useState<string>("5");
+  const [userId, setUserId] = useState<string>("5"); // Valeur initiale "5" avant connexion
+  const [authenticating, setAuthenticating] = useState(true); // Pour vérifier si on est en train de vérifier l'authentification
+  const [userRole, setUserRole] = useState<string>(""); // Rôle de l'utilisateur
 
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [readList, setReadList] = useState<string[]>([]);
@@ -23,7 +25,6 @@ export function App() {
   const [loadingFirst, setLoadingFirst] = useState(true);
   const [loadingOthers, setLoadingOthers] = useState(true);
 
-  // 🔄 Vérifier l'authentification au chargement de l'application
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("token");
@@ -35,13 +36,29 @@ export function App() {
           });
           if (response.ok) {
             const data = await response.json();
-            setUserId(data.id_user);
-            setIsLoggedIn(true);
+            setUserId(data.id_user); // Mettre à jour userId si l'utilisateur est connecté
+            setIsLoggedIn(true); // Utilisateur connecté
+
+            // Récupérer également le rôle de l'utilisateur
+            const roleResponse = await fetch(
+              "http://127.0.0.1:8000/usr/me/role",
+              {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const roleData = await roleResponse.json();
+            setUserRole(roleData.role); // Mettre à jour le rôle de l'utilisateur
+            console.log(
+              "🟢 Utilisateur connecté avec le rôle :",
+              roleData.role
+            );
           } else {
             console.warn("🔴 Token invalide, déconnexion...");
             localStorage.removeItem("token");
-            setUserId("5"); // Remettre userId = 5
-            setIsLoggedIn(false);
+            setUserId("5"); // Revenir à userId = 5 si non connecté
+            setIsLoggedIn(false); // Utilisateur non connecté
+            setUserRole(""); // Réinitialiser le rôle
           }
         } catch (error) {
           console.error(
@@ -49,50 +66,65 @@ export function App() {
             error
           );
         }
+      } else {
+        setUserId("5"); // Aucun token, donc userId par défaut = 5
+        setIsLoggedIn(false); // Utilisateur non connecté
       }
+
+      setAuthenticating(false); // Authentification terminée, on peut maintenant charger les livres
     };
 
     checkAuth();
-  }, []); // Exécuter une seule fois au chargement de la page
+  }, [userId]); // Effectuer une seule fois au chargement de la page, même après un refresh
 
-  // ⚡ Fetch des livres basés sur `userId`
+  // ⚡ Fetch des livres basé sur `userId` (initialement "5", puis mis à jour après connexion)
   useEffect(() => {
-    const fetchBooks = async () => {
-      setLoadingFirst(true);
-      setLoadingOthers(true);
+    if (authenticating) return; // Ne pas faire le fetch avant d'avoir terminé l'authentification
 
-      const books = await get_books_recom_acm(userId);
+    const fetchBooks = async () => {
+      console.log("Fetching books for user:", userId); // Affichage du userId pour voir quel user est utilisé
+      setLoadingFirst(true); // Début du chargement
+      setLoadingOthers(true); // Début du chargement des autres livres
+
+      const books = await get_books_recom_acm(userId); // Fetch des livres avec l'userId courant
+      console.log("Books from ACM:", books); // Affiche les livres récupérés
       if (books) {
-        setRecommendedBooks(books);
-        setLoadingFirst(false);
+        setRecommendedBooks(books); // Stocker les livres dans l'état
+        setLoadingFirst(false); // Fin du chargement du premier carrousel
       }
 
       const booksACP = await get_books_recom_acp(userId);
       const booksSIM = await get_books_recom_sim(userId);
 
+      console.log("Books from ACP:", booksACP); // Affiche les livres ACP
+      console.log("Books from SIM:", booksSIM); // Affiche les livres SIM
+
       if (booksACP) setRecommendedBooksACP(booksACP);
       if (booksSIM) setRecommendedBooksSIM(booksSIM);
-      setLoadingOthers(false);
+      setLoadingOthers(false); // Fin du chargement des autres recommandations
     };
 
-    fetchBooks();
-  }, [userId]); // 🔄 Recharger les livres quand `userId` change
+    fetchBooks(); // Lancer le fetch
+  }, [userId, authenticating]); // Relancer lorsque `userId` change (quand un utilisateur se connecte)
 
+  // 🔄 Fonction de connexion réussie
   const handleLoginSuccess = (newUserId: string) => {
-    setUserId(newUserId);
-    setIsLoggedIn(true);
+    setUserId(newUserId); // Mettre à jour `userId` avec le nouvel utilisateur
+    setIsLoggedIn(true); // Utilisateur connecté
   };
 
+  // 🔄 Fonction de déconnexion
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setUserId("5");
-    setIsLoggedIn(false);
+    setUserId("5"); // Revenir à l'ID par défaut après déconnexion
+    setUserRole(""); // Réinitialiser le rôle
+    setIsLoggedIn(false); // Utilisateur non connecté
   };
 
+  // 🔄 Fetch wishlist et readList après connexion
   useEffect(() => {
     const fetchWishlist = async () => {
       if (isLoggedIn) {
-        // Vérifie si l'utilisateur est connecté
         const response = await fetch(
           `http://127.0.0.1:8000/wishlist/${userId}`
         );
@@ -105,7 +137,6 @@ export function App() {
 
     const fetchReadList = async () => {
       if (isLoggedIn) {
-        // Vérifie si l'utilisateur est connecté
         const response = await fetch(`http://127.0.0.1:8000/a_lu/${userId}`);
         if (response.ok) {
           const data = await response.json();
@@ -115,18 +146,16 @@ export function App() {
     };
 
     if (isLoggedIn) {
-      // Exécuter seulement si l'utilisateur est connecté
       fetchWishlist();
       fetchReadList();
     }
-  }, [userId, isLoggedIn]); // Le useEffect dépend aussi de l'état de connexion
+  }, [userId, isLoggedIn]); // Le useEffect dépend de `userId` et `isLoggedIn`
 
   const toggleWishlist = async (bookId: string) => {
-    if (!isLoggedIn) return; // Ne faire aucune action si l'utilisateur n'est pas connecté
+    if (!isLoggedIn) return;
 
     try {
       if (wishlist.includes(bookId)) {
-        // Supprimer du wishlist en BDD
         await fetch("http://127.0.0.1:8000/wishlist/remove", {
           method: "DELETE",
           headers: {
@@ -139,7 +168,6 @@ export function App() {
         });
         setWishlist(wishlist.filter((id) => id !== bookId));
       } else {
-        // Ajouter au wishlist en BDD
         await fetch("http://127.0.0.1:8000/wishlist/add", {
           method: "POST",
           headers: {
@@ -158,25 +186,23 @@ export function App() {
   };
 
   const toggleReadList = async (bookId: string) => {
-    if (!isLoggedIn) return; // Ne faire aucune action si l'utilisateur n'est pas connecté
+    if (!isLoggedIn) return;
 
     try {
       if (readList.includes(bookId)) {
-        // Supprimer du ReadList en BDD
         await fetch("http://127.0.0.1:8000/a_lu/remove", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            user_id: userId, // Assurez-vous que les noms de clés sont corrects
-            book_id: bookId, // Id du livre à supprimer
-            genre_id: 1, // Genre que vous pouvez adapter
+            user_id: userId,
+            book_id: bookId,
+            genre_id: 1,
           }),
         });
         setReadList(readList.filter((id) => id !== bookId));
       } else {
-        // Ajouter au ReadList en BDD
         await fetch("http://127.0.0.1:8000/a_lu/add", {
           method: "POST",
           headers: {
@@ -185,7 +211,7 @@ export function App() {
           body: JSON.stringify({
             user_id: userId,
             book_id: bookId,
-            genre_id: 1, // Vous pouvez adapter le genre ou l'envoyer dynamiquement
+            genre_id: 1,
           }),
         });
         setReadList([...readList, bookId]);
@@ -207,7 +233,6 @@ export function App() {
       "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8A%3D%3D&auto=format&fit=crop&w=1470&q=80",
   };
 
-  // Book use for the first hero section
   let firstBook =
     recommendedBooks.length > 0 &&
     recommendedBooks[0] &&
@@ -230,10 +255,11 @@ export function App() {
       <Navbar
         isLoggedIn={isLoggedIn}
         userId={userId}
+        userRole={userRole}
         onLoginSuccess={handleLoginSuccess}
         onLogout={handleLogout}
-        wishlist={wishlist} // Passer la wishlist à Navbar
-        readList={readList} // Passer la readList à Navbar
+        wishlist={wishlist}
+        readList={readList}
         onToggleWishlist={toggleWishlist}
         onToggleReadList={toggleReadList}
       />
