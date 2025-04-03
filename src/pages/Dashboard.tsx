@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AddBookModal from "../components/AddBookModal"; 
 
 interface Book {
   id_livre: number;   // ID du livre
@@ -33,6 +34,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"catalog" | "tobuy">("catalog");
   const [isManager, setIsManager] = useState(false); // Pour vérifier si l'utilisateur est un manager
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAddBookModalOpen, setIsAddBookModalOpen] = useState(false);
 
   // Vérifier si l'utilisateur est connecté et s'il est un manager
   useEffect(() => {
@@ -192,7 +194,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold">Catalogue des livres</h2>
             <div className="flex gap-2">
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => setIsAddBookModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition-colors"
               >
                 <Plus size={18} />
@@ -239,6 +241,7 @@ const Dashboard: React.FC = () => {
                 onClick={handleExportCSV}
                 className="flex items-center gap-2 px-4 py-2 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors"
               >
+                
                 <Download size={18} />
                 Exporter CSV
               </button>
@@ -285,6 +288,11 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       )}
+
+    <AddBookModal
+            isOpen={isAddBookModalOpen}
+          onClose={() => setIsAddBookModalOpen(false)}
+          />
 
       {/* Modal commun */}
       {isModalOpen && (
