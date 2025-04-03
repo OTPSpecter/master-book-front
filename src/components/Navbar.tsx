@@ -4,6 +4,8 @@ import { SearchIcon, UserIcon, ChevronDownIcon } from "lucide-react";
 import LoginModal from "./LoginModal";
 import BookModal from "./BookModal";
 import AuthorModal from "./AuthorModal";
+import AddBookModal from "./AddBookModal";
+import '../index.css'
 
 interface NavbarProps {
   isLoggedIn: boolean;
@@ -35,6 +37,7 @@ const Navbar: React.FC<NavbarProps> = ({
     name: string;
   } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAddBookModalOpen, setIsAddBookModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -71,7 +74,37 @@ const Navbar: React.FC<NavbarProps> = ({
               </Link>
             </nav>
           </div>
-
+          <div className="buttons">
+            <button className="blob-btn" onClick={() => setIsAddBookModalOpen(true)}>
+              Ajouter un livre
+              <span className="blob-btn__inner">
+                <span className="blob-btn__blobs">
+                  <span className="blob-btn__blob"></span>
+                  <span className="blob-btn__blob"></span>
+                  <span className="blob-btn__blob"></span>
+                  <span className="blob-btn__blob"></span>
+                </span>
+              </span>
+            </button>
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+              <defs>
+                <filter id="goo">
+                  <feGaussianBlur
+                    in="SourceGraphic"
+                    result="blur"
+                    stdDeviation="10"
+                  ></feGaussianBlur>
+                  <feColorMatrix
+                    in="blur"
+                    mode="matrix"
+                    values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 21 -7"
+                    result="goo"
+                  ></feColorMatrix>
+                  <feBlend in2="goo" in="SourceGraphic" result="mix"></feBlend>
+                </filter>
+              </defs>
+            </svg>
+          </div>
           <div className="relative flex items-center space-x-3">
             {/* 🌟 Switch entre Titre et Auteur */}
             <button
@@ -190,6 +223,10 @@ const Navbar: React.FC<NavbarProps> = ({
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={onLoginSuccess}
+      />
+      <AddBookModal
+        isOpen={isAddBookModalOpen}
+      onClose={() => setIsAddBookModalOpen(false)}
       />
 
       {/* Modals pour Livres et Auteurs */}
