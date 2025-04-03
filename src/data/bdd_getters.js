@@ -1,6 +1,7 @@
 
 // Function to get the list of books for the recommendation system for ACM
 export async function get_books_recom_acm(user_id) {
+    //"Livre que vous pourriez aimer & premier caroussel"
     try {
         const response = await fetch(`http://127.0.0.1:8000/livres/acm_recom/${user_id}`);
         if (!response.ok) {
@@ -17,6 +18,7 @@ export async function get_books_recom_acm(user_id) {
 // Function to get the list of books for the recommendation system for ACP
 export async function get_books_recom_acp(user_id) {
     try {
+        //"Livre recommandés && 2 ème caroussel""
         const response = await fetch(`http://127.0.0.1:8000/livres/acp_recom/${user_id}`);
         if (!response.ok) {
             throw new Error(`Erreur HTTP: ${response.status}`);

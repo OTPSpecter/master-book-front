@@ -8,7 +8,7 @@ import {
   get_books_recom_sim,
 } from "./data/bdd_getters.js";
 import { Route, Routes } from "react-router-dom";
-import Search from "./pages/Search.js";
+import Dashboard from "./pages/Dashboard.tsx";
 
 export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,6 +24,9 @@ export function App() {
   const [recommendedBooksSIM, setRecommendedBooksSIM] = useState<any[][]>([]);
   const [loadingFirst, setLoadingFirst] = useState(true);
   const [loadingOthers, setLoadingOthers] = useState(true);
+
+  const [loadingAuth, setLoadingAuth] = useState(true); // Indique si l'authentification est en cours
+
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -72,14 +75,15 @@ export function App() {
       }
 
       setAuthenticating(false); // Authentification terminée, on peut maintenant charger les livres
+      setLoadingAuth(false); // L'authentification est terminée
     };
 
     checkAuth();
-  }, [userId]); // Effectuer une seule fois au chargement de la page, même après un refresh
+  }, [userId]); // Effectuer une seule fois au chargement de la page
 
   // ⚡ Fetch des livres basé sur `userId` (initialement "5", puis mis à jour après connexion)
   useEffect(() => {
-    if (authenticating) return; // Ne pas faire le fetch avant d'avoir terminé l'authentification
+    if (authenticating || loadingAuth) return; // Ne pas faire le fetch avant d'avoir terminé l'authentification
 
     const fetchBooks = async () => {
       console.log("Fetching books for user:", userId); // Affichage du userId pour voir quel user est utilisé
@@ -99,13 +103,13 @@ export function App() {
       console.log("Books from ACP:", booksACP); // Affiche les livres ACP
       console.log("Books from SIM:", booksSIM); // Affiche les livres SIM
 
-      if (booksACP) setRecommendedBooksACP(booksACP);
-      if (booksSIM) setRecommendedBooksSIM(booksSIM);
+      setRecommendedBooksACP(booksACP);
+      setRecommendedBooksSIM(booksSIM);
       setLoadingOthers(false); // Fin du chargement des autres recommandations
     };
 
     fetchBooks(); // Lancer le fetch
-  }, [userId, authenticating]); // Relancer lorsque `userId` change (quand un utilisateur se connecte)
+  }, [userId, authenticating, loadingAuth]); // Relancer lorsque `userId` change (quand un utilisateur se connecte)
 
   // 🔄 Fonction de connexion réussie
   const handleLoginSuccess = (newUserId: string) => {
@@ -263,8 +267,8 @@ export function App() {
         onToggleWishlist={toggleWishlist}
         onToggleReadList={toggleReadList}
       />
-      <Routes>
-        <Route path="/search" element={<Search />} />
+            <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
       {firstBook && (
         <Hero
